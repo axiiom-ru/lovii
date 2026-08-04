@@ -84,7 +84,19 @@
 
 ## Смотрите также
 
+- [О проекте LOVII](./) — главная
 - [Публичная оферта](docs/Публичная_оферта.html) — правила для покупателей
 - [Оферта присоединения](docs/Оферта_присоединения.html) — для продавцов и лицензиатов
 
-**LOVII:** [app.lovii.ru](https://app.lovii.ru) — главная приложения · [lovii.ru](https://lovii.ru) — главная проекта · [axiiom.ru](https://axiiom.ru) — сайт правообладателя
+## Контакты
+
+| Канал | Контакт |
+|:---|:---|
+| **Сайт Программы** | [app.lovii.ru](https://app.lovii.ru) |
+| **Email** | [hello@axiiom.ru](mailto:hello@axiiom.ru) |
+| **Telegram** | [@loviiru](https://t.me/loviiru) |
+| **MAX** | [max.ru/channel_lovii](https://max.ru/channel_lovii) |
+| **ВКонтакте** | [vk.ru/loviiru](https://vk.ru/loviiru) |
+| **Телефон** | +7 911 928 74 78 |
+
+**LOVII:** [app.lovii.ru](https://app.lovii.ru) · [lovii.ru](https://lovii.ru) · [axiiom.ru](https://axiiom.ru)
