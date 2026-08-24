@@ -79,6 +79,8 @@
 |:---|:---|:---|
 | **Публичная оферта** (для покупателей) | [Открыть](https://axiiom-ru.github.io/lovii/docs/Публичная_оферта.html) | [исходник](https://github.com/axiiom-ru/lovii/blob/main/docs/Публичная_оферта.md) |
 | **Оферта присоединения** (для продавцов/лицензиатов) | [Открыть](https://axiiom-ru.github.io/lovii/docs/Оферта_присоединения.html) | [исходник](https://github.com/axiiom-ru/lovii/blob/main/docs/Оферта_присоединения.md) |
+| **Схема движения средств LOVII** (базовая: оператор LOVII, выплаты представителям/амбассадорам со счёта оператора) | [Открыть](https://axiiom-ru.github.io/lovii/docs/money_flow_lovii.html) | [исходник](https://github.com/axiiom-ru/lovii/blob/main/docs/money_flow_lovii.md) |
+| **Схема движения средств — Оператор: Компания-разработчик** (альтернатива: выплаты представителям/амбассадорам напрямую с транзитного счёта) | [Открыть](https://axiiom-ru.github.io/lovii/docs/money_flow_dev_operator.html) | [исходник](https://github.com/axiiom-ru/lovii/blob/main/docs/money_flow_dev_operator.md) |
 
 ---
 
@@ -87,6 +89,8 @@
 - [О проекте LOVII — цифровая платформа локальной экономики](https://axiiom-ru.github.io/lovii/) — главная
 - [Публичная оферта на заключение договора купли-продажи товаров и оказания услуг через Платформу «Лови»](https://axiiom-ru.github.io/lovii/docs/Публичная_оферта.html) — правила для покупателей
 - [Оферта присоединения на заключение лицензионного договора (простая неисключительная лицензия) на использование Программы для ЭВМ «Платформа Лови» с условиями абонентского договора на техническое сопровождение](https://axiiom-ru.github.io/lovii/docs/Оферта_присоединения.html) — для продавцов и лицензиатов
+- [Схема движения средств LOVII](https://axiiom-ru.github.io/lovii/docs/money_flow_lovii.html) — базовая схема распределения платежа 1000 ₽ (оператор LOVII)
+- [Схема движения средств — Оператор: Компания-разработчик](https://axiiom-ru.github.io/lovii/docs/money_flow_dev_operator.html) — альтернатива: выплаты представителям/амбассадорам напрямую с транзитного счёта
 
 ## Контакты
 
