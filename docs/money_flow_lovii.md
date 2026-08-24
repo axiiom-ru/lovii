@@ -149,3 +149,18 @@ flowchart TD
     class P buyer; class B bank; class T transit; class S shop;
     class L lovii; class C lovii; class R rep; class A rep; class D dev; class DOC doc;
 ```
+
+<!-- Mermaid для GitHub Pages: Jekyll/kramdown не рендерит диаграммы сам,
+поэтому подключаем mermaid.js и вручную превращаем блоки ```mermaid в <div class="mermaid">.
+На github.com этот <script> вырезается санитайзером (там Mermaid рисует нативно). -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  document.querySelectorAll('pre code.language-mermaid').forEach(function (el) {
+    var div = document.createElement('div');
+    div.className = 'mermaid';
+    div.textContent = el.textContent;
+    el.parentNode.replaceWith(div);
+  });
+  mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose', htmlLabels: true });
+  mermaid.run();
+</script>
