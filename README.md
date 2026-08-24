@@ -81,6 +81,7 @@
 | **Оферта присоединения** (для продавцов/лицензиатов) | [Открыть](https://axiiom-ru.github.io/lovii/docs/Оферта_присоединения.html) | [исходник](https://github.com/axiiom-ru/lovii/blob/main/docs/Оферта_присоединения.md) |
 | **Схема движения средств LOVII** (базовая: оператор LOVII, выплаты представителям/амбассадорам со счёта оператора) | [Открыть](https://axiiom-ru.github.io/lovii/docs/money_flow_lovii.html) | [исходник](https://github.com/axiiom-ru/lovii/blob/main/docs/money_flow_lovii.md) |
 | **Схема движения средств — Оператор: Компания-разработчик** (альтернатива: выплаты представителям/амбассадорам напрямую с транзитного счёта) | [Открыть](https://axiiom-ru.github.io/lovii/docs/money_flow_dev_operator.html) | [исходник](https://github.com/axiiom-ru/lovii/blob/main/docs/money_flow_dev_operator.md) |
+| **Схема движения средств — Лицензиар: Компания-разработчик (выплаты с расчётного счёта)** (корректный путь: пул целиком на счёт лицензиара, выплаты представителям/амбассадам с её расчётного счёта) | [Открыть](https://axiiom-ru.github.io/lovii/docs/money_flow_dev_operator_settlement.html) | [исходник](https://github.com/axiiom-ru/lovii/blob/main/docs/money_flow_dev_operator_settlement.md) |
 
 ---
 
@@ -91,6 +92,7 @@
 - [Оферта присоединения на заключение лицензионного договора (простая неисключительная лицензия) на использование Программы для ЭВМ «Платформа Лови» с условиями абонентского договора на техническое сопровождение](https://axiiom-ru.github.io/lovii/docs/Оферта_присоединения.html) — для продавцов и лицензиатов
 - [Схема движения средств LOVII](https://axiiom-ru.github.io/lovii/docs/money_flow_lovii.html) — базовая схема распределения платежа 1000 ₽ (оператор LOVII)
 - [Схема движения средств — Оператор: Компания-разработчик](https://axiiom-ru.github.io/lovii/docs/money_flow_dev_operator.html) — альтернатива: выплаты представителям/амбассадорам напрямую с транзитного счёта
+- [Схема движения средств — Лицензиар: Компания-разработчик (выплаты с расчётного счёта)](https://axiiom-ru.github.io/lovii/docs/money_flow_dev_operator_settlement.html) — корректный путь: пул целиком на счёт лицензиара, выплаты представителям/амбассадорам с её расчётного счёта
 
 ## Контакты
 
