@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOVII — сравнение версий документов</title>
+<script src="https://cdn.jsdelivr.net/npm/diff@5.2.0/dist/diff.min.js"></script>
+<style>
+  :root { --bg:#0f1115; --panel:#171a21; --fg:#e6e6e6; --muted:#9aa0a6; --add:#1f3d2b; --addf:#7ee2a0; --del:#3d1f24; --delf:#ff9aa6; --line:#2a2f38; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:var(--fg); padding:24px; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin:0 0 20px; font-size:13px; }
+  .controls { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; background:var(--panel); padding:16px; border-radius:12px; margin-bottom:16px; }
+  label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); }
+  select, button { font-size:14px; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:#0c0e12; color:var(--fg); }
+  button { background:#2b6cff; border-color:#2b6cff; color:#fff; cursor:pointer; font-weight:600; }
+  button:hover { filter:brightness(1.1); }
+  .meta { color:var(--muted); font-size:13px; margin-bottom:10px; line-height:1.6; }
+  .diff { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:13px; line-height:1.5; white-space:pre-wrap; word-break:break-word; background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px; max-height:70vh; overflow:auto; }
+  .add { background:var(--add); color:var(--addf); display:block; }
+  .del { background:var(--del); color:var(--delf); display:block; }
+  .ctx { display:block; color:var(--fg); }
+  .err { color:var(--delf); }
+  code { background:#0c0e12; padding:1px 5px; border-radius:4px; }
+</style>
+</head>
+<body>
+  <h1>Сравнение версий документов LOVII</h1>
+  <p class="sub">Выберите документ и две версии — увидите все различия построчно. Ссылку можно скопировать и отправить (например, банку).</p>
+  <div class="controls">
+    <label>Документ<select id="doc"></select></label>
+    <label>Версия A<select id="va"></select></label>
+    <label>Версия B<select id="vb"></select></label>
+    <button id="go">Сравнить</button>
+  </div>
+  <div class="meta" id="meta"></div>
+  <div class="diff" id="out">Выберите параметры и нажмите «Сравнить».</div>
+
+<script>
+const DOCS = [
+  { label: "Публичная оферта (для покупателей)", file: "Публичная_оферта.md" },
+  { label: "Оферта присоединения (для продавцов)", file: "Оферта_присоединения.md" },
+  { label: "Схема движения средств", file: "money_flow_public.md" }
+];
+const VERSIONS = ["v0.9.0", "v1.0.0"];
+const REPO = "axiiom-ru/lovii";
+
+const docSel = document.getElementById("doc");
+const vaSel = document.getElementById("va");
+const vbSel = document.getElementById("vb");
+const out = document.getElementById("out");
+const meta = document.getElementById("meta");
+
+DOCS.forEach(d => { const o = document.createElement("option"); o.value = d.file; o.textContent = d.label; docSel.appendChild(o); });
+VERSIONS.forEach(v => { [vaSel, vbSel].forEach(s => { const o = document.createElement("option"); o.value = v; o.textContent = v; s.appendChild(o); }); });
+vbSel.value = "v1.0.0";
+
+function raw(ver, file) {
+  return "https://raw.githubusercontent.com/" + REPO + "/" + ver + "/docs/" + encodeURIComponent(file);
+}
+async function getText(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("HTTP " + r.status + " для " + url);
+  return await r.text();
+}
+function renderDiff(a, b) {
+  const parts = Diff.diffLines(a, b);
+  let added = 0, removed = 0;
+  const frag = document.createDocumentFragment();
+  parts.forEach(p => {
+    const cls = p.added ? "add" : p.removed ? "del" : "ctx";
+    if (p.added) added += 1;
+    if (p.removed) removed += 1;
+    const lines = p.value.replace(/\n$/, "").split("\n");
+    lines.forEach(ln => {
+      const span = document.createElement("span");
+      span.className = cls;
+      span.textContent = (p.added ? "+ " : p.removed ? "- " : "  ") + ln;
+      frag.appendChild(span);
+    });
+  });
+  out.innerHTML = "";
+  out.appendChild(frag);
+  return { added, removed };
+}
+async function run() {
+  const file = docSel.value, va = vaSel.value, vb = vbSel.value;
+  meta.textContent = "Загрузка " + file + " (" + va + " → " + vb + ")…";
+  out.textContent = "";
+  try {
+    const [ta, tb] = await Promise.all([getText(raw(va, file)), getText(raw(vb, file))]);
+    const stats = renderDiff(ta, tb);
+    const link = location.origin + location.pathname + "?doc=" + encodeURIComponent(file) + "&a=" + va + "&b=" + vb;
+    meta.innerHTML = "Документ: <code>" + file + "</code> · версии <code>" + va + "</code> → <code>" + vb + "</code> · добавлено строк: " + stats.added + ", удалено: " + stats.removed +
+      "<br>Ссылка для отправки: <code>" + link + "</code>";
+  } catch (e) {
+    out.innerHTML = '<span class="err">Ошибка: ' + e.message + '</span>';
+    meta.textContent = "";
+  }
+}
+document.getElementById("go").addEventListener("click", run);
+
+const params = new URLSearchParams(location.search);
+if (params.get("doc")) docSel.value = params.get("doc");
+if (params.get("a")) vaSel.value = params.get("a");
+if (params.get("b")) vbSel.value = params.get("b");
+if (params.get("doc") && params.get("a") && params.get("b")) run();
+</script>
+</body>
+</html>
