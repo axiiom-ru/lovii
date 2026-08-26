@@ -13,6 +13,7 @@
   .sub { color:var(--muted); margin:0 0 20px; font-size:13px; }
   .controls { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; background:var(--panel); padding:16px; border-radius:12px; margin-bottom:16px; }
   label { display:flex; flex-direction:column; gap:4px; font-size:12px; color:var(--muted); }
+  .chk { flex-direction:row; align-items:center; gap:6px; color:var(--fg); font-size:13px; }
   select, button { font-size:14px; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:#0c0e12; color:var(--fg); }
   button { background:#2b6cff; border-color:#2b6cff; color:#fff; cursor:pointer; font-weight:600; }
   button:hover { filter:brightness(1.1); }
@@ -32,6 +33,13 @@
     <label>Документ<select id="doc"></select></label>
     <label>Версия A<select id="va"></select></label>
     <label>Версия B<select id="vb"></select></label>
+    <label>Что показывать<select id="mode">
+      <option value="all">Все строки</option>
+      <option value="changes">Только изменения</option>
+      <option value="added">Только добавленные</option>
+      <option value="removed">Только удалённые</option>
+    </select></label>
+    <label class="chk"><input type="checkbox" id="igws"> Игнорировать пробелы</label>
     <button id="go">Сравнить</button>
   </div>
   <div class="meta" id="meta"></div>
@@ -49,8 +57,12 @@ const FALLBACK_VERSIONS = ["v0.9.0", "v1.0.0"];
 const docSel = document.getElementById("doc");
 const vaSel = document.getElementById("va");
 const vbSel = document.getElementById("vb");
+const modeSel = document.getElementById("mode");
+const igwsCb = document.getElementById("igws");
 const out = document.getElementById("out");
 const meta = document.getElementById("meta");
+
+let state = null; // { ta, tb, file, va, vb }
 
 function raw(ver, file) {
   return "https://raw.githubusercontent.com/" + REPO + "/" + ver + "/docs/" + encodeURIComponent(file);
@@ -90,25 +102,38 @@ async function getText(url) {
   if (!r.ok) throw new Error("HTTP " + r.status + " для " + url);
   return await r.text();
 }
-function renderDiff(a, b) {
-  const parts = Diff.diffLines(a, b);
+function render() {
+  if (!state) return;
+  const mode = modeSel.value;
+  const igws = igwsCb.checked;
+  const parts = Diff.diffLines(state.ta, state.tb, { ignoreWhitespace: igws });
   let added = 0, removed = 0;
   const frag = document.createDocumentFragment();
   parts.forEach(p => {
-    const cls = p.added ? "add" : p.removed ? "del" : "ctx";
-    if (p.added) added += 1;
-    if (p.removed) removed += 1;
+    const isAdd = !!p.added, isDel = !!p.removed;
+    if (isAdd) added += 1;
+    if (isDel) removed += 1;
+    if (mode === "changes" && !isAdd && !isDel) return;
+    if (mode === "added" && !isAdd) return;
+    if (mode === "removed" && !isDel) return;
+    const cls = isAdd ? "add" : isDel ? "del" : "ctx";
     const lines = p.value.replace(/\n$/, "").split("\n");
     lines.forEach(ln => {
       const span = document.createElement("span");
       span.className = cls;
-      span.textContent = (p.added ? "+ " : p.removed ? "- " : "  ") + ln;
+      span.textContent = (isAdd ? "+ " : isDel ? "- " : "  ") + ln;
       frag.appendChild(span);
     });
   });
   out.innerHTML = "";
-  out.appendChild(frag);
-  return { added, removed };
+  if (!frag.childNodes.length) {
+    out.innerHTML = '<span class="ctx">Нет отображаемых строк (возможно, различий нет или они скрыты фильтром).</span>';
+  } else {
+    out.appendChild(frag);
+  }
+  const link = location.origin + location.pathname + "?doc=" + encodeURIComponent(state.file) + "&a=" + state.va + "&b=" + state.vb + "&mode=" + mode + (igws ? "&igws=1" : "");
+  meta.innerHTML = "Документ: <code>" + state.file + "</code> · версии <code>" + state.va + "</code> → <code>" + state.vb + "</code> · добавлено строк: " + added + ", удалено: " + removed +
+    "<br>Ссылка для отправки: <code>" + link + "</code>";
 }
 async function run() {
   const file = docSel.value, va = vaSel.value, vb = vbSel.value;
@@ -117,16 +142,17 @@ async function run() {
   out.textContent = "";
   try {
     const [ta, tb] = await Promise.all([getText(raw(va, file)), getText(raw(vb, file))]);
-    const stats = renderDiff(ta, tb);
-    const link = location.origin + location.pathname + "?doc=" + encodeURIComponent(file) + "&a=" + va + "&b=" + vb;
-    meta.innerHTML = "Документ: <code>" + file + "</code> · версии <code>" + va + "</code> → <code>" + vb + "</code> · добавлено строк: " + stats.added + ", удалено: " + stats.removed +
-      "<br>Ссылка для отправки: <code>" + link + "</code>";
+    state = { ta, tb, file, va, vb };
+    render();
   } catch (e) {
+    state = null;
     out.innerHTML = '<span class="err">Ошибка: ' + e.message + '</span>';
     meta.textContent = "";
   }
 }
 document.getElementById("go").addEventListener("click", run);
+modeSel.addEventListener("change", render);
+igwsCb.addEventListener("change", render);
 
 (async () => {
   const [docs, vs] = await Promise.all([loadDocs(), loadVersions()]);
@@ -136,6 +162,8 @@ document.getElementById("go").addEventListener("click", run);
   if (params.get("doc")) docSel.value = params.get("doc");
   if (params.get("a")) vaSel.value = params.get("a");
   if (params.get("b")) vbSel.value = params.get("b");
+  if (params.get("mode")) modeSel.value = params.get("mode");
+  if (params.get("igws")) igwsCb.checked = true;
   if (params.get("doc") && params.get("a") && params.get("b")) run();
   else out.textContent = "Выберите параметры и нажмите «Сравнить».";
 })();
