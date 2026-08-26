@@ -22,12 +22,12 @@
   .del { background:var(--del); color:var(--delf); display:block; }
   .ctx { display:block; color:var(--fg); }
   .err { color:var(--delf); }
-  code { background:#0c0e12; padding:1px 5px; border-radius:4px; }
+  code { background:#0c0e12; padding:1px 5px; border-radius:4px; word-break:break-all; }
 </style>
 </head>
 <body>
   <h1>Сравнение версий документов LOVII</h1>
-  <p class="sub">Выберите документ и две версии — увидите все различия построчно. Ссылку можно скопировать и отправить (например, банку).</p>
+  <p class="sub">Выберите документ и две версии (списки подгружаются из репозитория автоматически) — увидите все различия построчно. Ссылку можно скопировать и отправить (например, банку).</p>
   <div class="controls">
     <label>Документ<select id="doc"></select></label>
     <label>Версия A<select id="va"></select></label>
@@ -35,16 +35,16 @@
     <button id="go">Сравнить</button>
   </div>
   <div class="meta" id="meta"></div>
-  <div class="diff" id="out">Выберите параметры и нажмите «Сравнить».</div>
+  <div class="diff" id="out">Загрузка списков версий и документов…</div>
 
 <script>
-const DOCS = [
+const REPO = "axiiom-ru/lovii";
+const FALLBACK_DOCS = [
   { label: "Публичная оферта (для покупателей)", file: "Публичная_оферта.md" },
   { label: "Оферта присоединения (для продавцов)", file: "Оферта_присоединения.md" },
   { label: "Схема движения средств", file: "money_flow_public.md" }
 ];
-const VERSIONS = ["v0.9.0", "v1.0.0"];
-const REPO = "axiiom-ru/lovii";
+const FALLBACK_VERSIONS = ["v0.9.0", "v1.0.0"];
 
 const docSel = document.getElementById("doc");
 const vaSel = document.getElementById("va");
@@ -52,13 +52,39 @@ const vbSel = document.getElementById("vb");
 const out = document.getElementById("out");
 const meta = document.getElementById("meta");
 
-DOCS.forEach(d => { const o = document.createElement("option"); o.value = d.file; o.textContent = d.label; docSel.appendChild(o); });
-VERSIONS.forEach(v => { [vaSel, vbSel].forEach(s => { const o = document.createElement("option"); o.value = v; o.textContent = v; s.appendChild(o); }); });
-vbSel.value = "v1.0.0";
-
 function raw(ver, file) {
   return "https://raw.githubusercontent.com/" + REPO + "/" + ver + "/docs/" + encodeURIComponent(file);
 }
+function verKey(v) { const m = /^v?(\d+)\.(\d+)\.(\d+)/.exec(v); return m ? [+m[1], +m[2], +m[3]] : null; }
+function cmpVer(a, b) { const ka = verKey(a), kb = verKey(b); if (!ka || !kb) return a.localeCompare(b); for (let i = 0; i < 3; i++) { if (ka[i] !== kb[i]) return ka[i] - kb[i]; } return 0; }
+
+async function loadVersions() {
+  try {
+    const r = await fetch("https://api.github.com/repos/" + REPO + "/tags?per_page=100");
+    if (!r.ok) throw new Error("tags " + r.status);
+    const arr = await r.json();
+    const vs = arr.map(t => t.name).filter(n => /^v\d+\.\d+\.\d+$/.test(n)).sort((a, b) => cmpVer(b, a));
+    return vs.length ? vs : FALLBACK_VERSIONS.slice();
+  } catch (e) { return FALLBACK_VERSIONS.slice(); }
+}
+async function loadDocs() {
+  try {
+    const r = await fetch("https://api.github.com/repos/" + REPO + "/contents/docs/");
+    if (!r.ok) throw new Error("docs " + r.status);
+    const arr = await r.json();
+    const docs = arr.filter(x => x.type === "file").map(x => ({ file: x.name, label: x.name.replace(/\.md$/, "").replace(/_/g, " ") }));
+    return docs.length ? docs : FALLBACK_DOCS;
+  } catch (e) { return FALLBACK_DOCS; }
+}
+function fillVersions(vs) {
+  [vaSel, vbSel].forEach(s => { s.innerHTML = ""; vs.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; s.appendChild(o); }); });
+  if (vs.length) { vbSel.value = vs[0]; vaSel.value = vs[1] || vs[0]; }
+}
+function fillDocs(docs) {
+  docSel.innerHTML = "";
+  docs.forEach(d => { const o = document.createElement("option"); o.value = d.file; o.textContent = d.label; docSel.appendChild(o); });
+}
+
 async function getText(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error("HTTP " + r.status + " для " + url);
@@ -86,6 +112,7 @@ function renderDiff(a, b) {
 }
 async function run() {
   const file = docSel.value, va = vaSel.value, vb = vbSel.value;
+  if (!file || !va || !vb) { out.textContent = "Списки ещё не загрузились, подождите…"; return; }
   meta.textContent = "Загрузка " + file + " (" + va + " → " + vb + ")…";
   out.textContent = "";
   try {
@@ -101,11 +128,17 @@ async function run() {
 }
 document.getElementById("go").addEventListener("click", run);
 
-const params = new URLSearchParams(location.search);
-if (params.get("doc")) docSel.value = params.get("doc");
-if (params.get("a")) vaSel.value = params.get("a");
-if (params.get("b")) vbSel.value = params.get("b");
-if (params.get("doc") && params.get("a") && params.get("b")) run();
+(async () => {
+  const [docs, vs] = await Promise.all([loadDocs(), loadVersions()]);
+  fillDocs(docs);
+  fillVersions(vs);
+  const params = new URLSearchParams(location.search);
+  if (params.get("doc")) docSel.value = params.get("doc");
+  if (params.get("a")) vaSel.value = params.get("a");
+  if (params.get("b")) vbSel.value = params.get("b");
+  if (params.get("doc") && params.get("a") && params.get("b")) run();
+  else out.textContent = "Выберите параметры и нажмите «Сравнить».";
+})();
 </script>
 </body>
 </html>
