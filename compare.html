@@ -28,7 +28,7 @@
 </head>
 <body>
   <h1>Сравнение версий документов LOVII</h1>
-  <p class="sub">Выберите документ и две версии (списки подгружаются из репозитория автоматически) — увидите все различия построчно. Ссылку можно скопировать и отправить (например, банку).</p>
+  <p class="sub">Выберите документ и две версии (списки подгружаются из репозитория автоматически) — увидите все различия построчно. Пункт «актуальная (main)» показывает живую ветку без тега. Ссылку можно скопировать и отправить (например, банку).</p>
   <div class="controls">
     <label>Документ<select id="doc"></select></label>
     <label>Версия A<select id="va"></select></label>
@@ -52,7 +52,7 @@ const FALLBACK_DOCS = [
   { label: "Оферта присоединения (для продавцов)", file: "Оферта_присоединения.md" },
   { label: "Схема движения средств", file: "money_flow_public.md" }
 ];
-const FALLBACK_VERSIONS = ["v0.9.0", "v1.0.0"];
+const FALLBACK_VERSIONS = ["v0.9.0", "v1.0.0", "main"];
 
 const docSel = document.getElementById("doc");
 const vaSel = document.getElementById("va");
@@ -69,6 +69,7 @@ function raw(ver, file) {
 }
 function verKey(v) { const m = /^v?(\d+)\.(\d+)\.(\d+)/.exec(v); return m ? [+m[1], +m[2], +m[3]] : null; }
 function cmpVer(a, b) { const ka = verKey(a), kb = verKey(b); if (!ka || !kb) return a.localeCompare(b); for (let i = 0; i < 3; i++) { if (ka[i] !== kb[i]) return ka[i] - kb[i]; } return 0; }
+function verLabel(v) { return v === "main" ? "актуальная (main)" : v; }
 
 async function loadVersions() {
   try {
@@ -76,6 +77,7 @@ async function loadVersions() {
     if (!r.ok) throw new Error("tags " + r.status);
     const arr = await r.json();
     const vs = arr.map(t => t.name).filter(n => /^v\d+\.\d+\.\d+$/.test(n)).sort((a, b) => cmpVer(b, a));
+    vs.unshift("main"); // живую ветку — первой
     return vs.length ? vs : FALLBACK_VERSIONS.slice();
   } catch (e) { return FALLBACK_VERSIONS.slice(); }
 }
@@ -89,7 +91,7 @@ async function loadDocs() {
   } catch (e) { return FALLBACK_DOCS; }
 }
 function fillVersions(vs) {
-  [vaSel, vbSel].forEach(s => { s.innerHTML = ""; vs.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; s.appendChild(o); }); });
+  [vaSel, vbSel].forEach(s => { s.innerHTML = ""; vs.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = verLabel(v); s.appendChild(o); }); });
   if (vs.length) { vbSel.value = vs[0]; vaSel.value = vs[1] || vs[0]; }
 }
 function fillDocs(docs) {
@@ -132,13 +134,13 @@ function render() {
     out.appendChild(frag);
   }
   const link = location.origin + location.pathname + "?doc=" + encodeURIComponent(state.file) + "&a=" + state.va + "&b=" + state.vb + "&mode=" + mode + (igws ? "&igws=1" : "");
-  meta.innerHTML = "Документ: <code>" + state.file + "</code> · версии <code>" + state.va + "</code> → <code>" + state.vb + "</code> · добавлено строк: " + added + ", удалено: " + removed +
+  meta.innerHTML = "Документ: <code>" + state.file + "</code> · версии <code>" + verLabel(state.va) + "</code> → <code>" + verLabel(state.vb) + "</code> · добавлено строк: " + added + ", удалено: " + removed +
     "<br>Ссылка для отправки: <code>" + link + "</code>";
 }
 async function run() {
   const file = docSel.value, va = vaSel.value, vb = vbSel.value;
   if (!file || !va || !vb) { out.textContent = "Списки ещё не загрузились, подождите…"; return; }
-  meta.textContent = "Загрузка " + file + " (" + va + " → " + vb + ")…";
+  meta.textContent = "Загрузка " + file + " (" + verLabel(va) + " → " + verLabel(vb) + ")…";
   out.textContent = "";
   try {
     const [ta, tb] = await Promise.all([getText(raw(va, file)), getText(raw(vb, file))]);
