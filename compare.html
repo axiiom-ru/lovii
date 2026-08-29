@@ -52,7 +52,7 @@ const FALLBACK_DOCS = [
   { label: "Оферта присоединения (для продавцов)", file: "Оферта_присоединения.md" },
   { label: "Схема движения средств", file: "money_flow_public.md" }
 ];
-const FALLBACK_VERSIONS = ["v0.9.0", "v1.0.0", "main"];
+const FALLBACK_VERSIONS = ["v0.9.0", "v1.0.0", "v2.0.0", "main"];
 
 const docSel = document.getElementById("doc");
 const vaSel = document.getElementById("va");
@@ -64,7 +64,10 @@ const meta = document.getElementById("meta");
 
 let state = null; // { ta, tb, file, va, vb }
 
-function raw(ver, file) {
+function rawJSD(ver, file) {
+  return "https://cdn.jsdelivr.net/gh/" + REPO + "@" + ver + "/docs/" + encodeURIComponent(file);
+}
+function rawGh(ver, file) {
   return "https://raw.githubusercontent.com/" + REPO + "/" + ver + "/docs/" + encodeURIComponent(file);
 }
 function verKey(v) { const m = /^v?(\d+)\.(\d+)\.(\d+)/.exec(v); return m ? [+m[1], +m[2], +m[3]] : null; }
@@ -77,7 +80,7 @@ async function loadVersions() {
     if (!r.ok) throw new Error("tags " + r.status);
     const arr = await r.json();
     const vs = arr.map(t => t.name).filter(n => /^v\d+\.\d+\.\d+$/.test(n)).sort((a, b) => cmpVer(b, a));
-    vs.unshift("main"); // живую ветку — первой
+    vs.unshift("main");
     return vs.length ? vs : FALLBACK_VERSIONS.slice();
   } catch (e) { return FALLBACK_VERSIONS.slice(); }
 }
@@ -99,10 +102,11 @@ function fillDocs(docs) {
   docs.forEach(d => { const o = document.createElement("option"); o.value = d.file; o.textContent = d.label; docSel.appendChild(o); });
 }
 
-async function getText(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error("HTTP " + r.status + " для " + url);
-  return await r.text();
+async function getText(url, fb) {
+  try { const r = await fetch(url); if (r.ok) return await r.text(); } catch (e) {}
+  const r2 = await fetch(fb);
+  if (!r2.ok) throw new Error("HTTP " + r2.status + " для " + fb);
+  return await r2.text();
 }
 function render() {
   if (!state) return;
@@ -143,12 +147,15 @@ async function run() {
   meta.textContent = "Загрузка " + file + " (" + verLabel(va) + " → " + verLabel(vb) + ")…";
   out.textContent = "";
   try {
-    const [ta, tb] = await Promise.all([getText(raw(va, file)), getText(raw(vb, file))]);
+    const [ta, tb] = await Promise.all([
+      getText(rawJSD(va, file), rawGh(va, file)),
+      getText(rawJSD(vb, file), rawGh(vb, file))
+    ]);
     state = { ta, tb, file, va, vb };
     render();
   } catch (e) {
     state = null;
-    out.innerHTML = '<span class="err">Ошибка: ' + e.message + '</span>';
+    out.innerHTML = '<span class="err">Ошибка загрузки документа: ' + e.message + '. Возможно, файл отсутствует в выбранной версии или сеть ограничена.</span>';
     meta.textContent = "";
   }
 }
